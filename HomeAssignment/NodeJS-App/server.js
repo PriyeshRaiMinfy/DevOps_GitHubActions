@@ -62,16 +62,41 @@ const Mutation = new GraphQLObjectType({
     }
 })
 const schema = new GraphQLSchema({query: RootQuery, mutation: Mutation})
-    app.use("/graphql", graphqlHTTP({
-        schema,
-        graphiql: true,
-    })
-);
+app.use("/graphql", graphqlHTTP({
+    schema,
+    graphiql: true,
+}));
 
 app.get("/rest/getAllUsers", (req, res) => {
-    res.send(userData)
+    res.send(userData);
+});
+
+app.get("/", (req, res) => {
+    res.send("Hurray :::::::::   Server is running on EC2 at port 3000.");
 });
 
 app.listen(PORT, () => {
     console.log("Server running");
 });
+
+
+
+
+
+
+
+
+
+//     app.use("/graphql", graphqlHTTP({
+//         schema,
+//         graphiql: true,
+//     })
+// );
+
+// app.get("/rest/getAllUsers", (req, res) => {
+//     res.send(userData)
+// });
+
+// app.listen(PORT, () => {
+//     console.log("Server running");
+// });
