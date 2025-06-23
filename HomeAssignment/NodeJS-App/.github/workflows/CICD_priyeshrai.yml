@@ -1,0 +1,72 @@
+name: Abhishek pipeline
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/abhishek_github
+
+jobs:
+  build:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          build-args: |
+            APP_VERSION=${{ github.sha }}
+
+  ssh-test:
+    name: Test SSH Connection to EC2
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Test SSH connection
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          debug: true
+          script: |
+            whoami
+            hostname
+
+  deploy:
+    name: Deploy to EC2
+    runs-on: ubuntu-latest
+    needs: ssh-test
+    steps:
+      - name: Deploy via SSH to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: 22
+          script: |
+            echo "${{ secrets.DOCKERHUB_TOKEN }}" | sudo docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+            sudo docker pull ${{ env.IMAGE_NAME }}:${{ github.sha }}
+            sudo docker stop my-app-container || true
+            sudo docker rm my-app-container || true
+            sudo docker run -d --name my-app-container --restart always -p 3000:3000 ${{ env.IMAGE_NAME }}:${{ github.sha }}
+            sudo docker image prune -a -f
