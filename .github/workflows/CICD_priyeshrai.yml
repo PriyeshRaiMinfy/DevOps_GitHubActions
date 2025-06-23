@@ -27,9 +27,15 @@ jobs:
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
+#------------------------    For Sai sir's assignment   ------------------------------------------------- 
+        # with:
+        #   # context: .
+        #   context: ./HomeAssignment/NodeJS-App
+#-----------------------------       For My assignment     ----------------------------------------------
         with:
-          # context: .
-          context: ./HomeAssignment/NodeJS-App
+          context: ./HomeAssignment/AnotherProject
+          file: ./HomeAssignment/AnotherProject/Dockerfile
+
 
           push: true
           tags: ${{ env.IMAGE_NAME }}:${{ github.sha }}
